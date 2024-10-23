@@ -155,7 +155,7 @@ vim.opt.inccommand = 'split'
 vim.opt.cursorline = true
 
 -- Minimal number of screen lines to keep above and below the cursor.
-vim.opt.scrolloff = 10
+vim.opt.scrolloff = 20
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -880,8 +880,8 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      -- vim.cmd.colorscheme 'tokyonight-night'
-      vim.cmd.colorscheme 'nord'
+      vim.cmd.colorscheme 'tokyonight-night'
+      -- vim.cmd.colorscheme 'nord'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
