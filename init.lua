@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -189,6 +189,9 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+vim.keymap.set('n', '<S-j>', '<C-d>')
+vim.keymap.set('n', '<S-k>', '<C-u>')
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -387,6 +390,9 @@ require('lazy').setup({
         --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
         --   },
         -- },
+        defaults = {
+          path_display = { 'smart' },
+        },
         -- pickers = {}
         extensions = {
           ['ui-select'] = {
@@ -411,6 +417,8 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+
+      builtin.buffers { sort_lastused = true, ignore_current_buffer = true }
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
@@ -543,6 +551,8 @@ require('lazy').setup({
           -- or a suggestion from your LSP for this to activate.
           map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction', { 'n', 'x' })
 
+          map('<leader>h', vim.lsp.buf.hover, 'Display Symbol Info ([H]over)')
+
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
@@ -615,7 +625,34 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        ts_ls = {
+          root_dir = function(fname)
+            local lspconfig = require 'lspconfig'
+            return lspconfig.util.root_pattern 'tsconfig.json'(fname) or lspconfig.util.root_pattern('package.json', 'jsconfig.json', '.git')(fname)
+          end,
+        },
+
+        eslint = {
+          settings = {
+            autoFixOnSave = true,
+            workingDirectory = { mode = 'auto' },
+          },
+          setup = {
+            eslint = function()
+              -- vim.cmd [[
+              --   autocmd BufWritePre *.tsx,*.ts,*.jsx,*.js EslintFixAll
+              -- ]]
+              -- local formatter = vim.lsp.formatter({
+              --   name = "eslint: lsp",
+              --   primary = false,
+              --   priority = 200,
+              --   filter = "eslint",
+              -- })
+              --
+              -- vim.format.register(formatter)
+            end,
+          },
+        },
         --
 
         lua_ls = {
@@ -633,6 +670,7 @@ require('lazy').setup({
           },
         },
       }
+      vim.keymap.set('n', '<leader>f', ':EslintFixAll<CR>', { desc = '[F]ix All Eslint' })
 
       -- Ensure the servers and tools above are installed
       --  To check the current status of installed tools and/or manually install
@@ -664,20 +702,23 @@ require('lazy').setup({
       }
     end,
   },
+  -- { 'LazyVim/LazyVim', import = 'lazyvim.plugins' },
+  -- { 'LazyVim/LazyVim', import = 'lazyvim.plugins.extras.linting.eslint' },
+  -- { 'LazyVim/LazyVim', import = 'lazyvim.plugins.extras.formatting.prettier' },
 
   { -- Autoformat
     'stevearc/conform.nvim',
     event = { 'BufWritePre' },
     cmd = { 'ConformInfo' },
     keys = {
-      {
-        '<leader>f',
-        function()
-          require('conform').format { async = true, lsp_format = 'fallback' }
-        end,
-        mode = '',
-        desc = '[F]ormat buffer',
-      },
+      -- {
+      --   '<leader>f',
+      --   function()
+      --     require('conform').format { async = true, lsp_format = 'fallback' }
+      --   end,
+      --   mode = '',
+      --   desc = '[F]ormat buffer',
+      -- },
     },
     opts = {
       notify_on_error = false,
@@ -703,7 +744,9 @@ require('lazy').setup({
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        -- javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        -- typescript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescriptreact = { 'eslint', 'prettier' },
       },
     },
   },
@@ -775,7 +818,9 @@ require('lazy').setup({
           -- Accept ([y]es) the completion.
           --  This will auto-import if your LSP supports it.
           --  This will expand snippets if the LSP sent a snippet.
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
+          -- ['<C-y>'] = cmp.mapping.confirm { select = true },
+          ['<Tab>'] = cmp.mapping.confirm { select = true },
+          ['<CR>'] = cmp.mapping.confirm { select = true },
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
@@ -835,7 +880,8 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'nord'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
@@ -919,17 +965,17 @@ require('lazy').setup({
   --
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
@@ -951,6 +997,12 @@ require('lazy').setup({
     },
   },
 })
+
+-- Neovide settings
+if vim.g.neovide then
+  vim.o.guifont = 'JetBrains Mono:h13'
+  vim.g.neovide_cursor_animation_length = 0
+end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
